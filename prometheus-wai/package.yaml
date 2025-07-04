@@ -1,0 +1,22 @@
+name: prometheus-wai
+version: 0.0.0.0
+github: "NorfairKing/prometheus-wai"
+license: MIT
+author: "Tom Sydney Kerckhove"
+maintainer: "syd@cs-syd.eu"
+copyright: "Copyright (c) 2025 Tom Sydney Kerckhove"
+description: "Prometheus metrics for WAI applications"
+
+dependencies:
+- base >= 4.7 && < 5
+
+library:
+  source-dirs: src
+  build-tools: autoexporter
+  dependencies:
+    - bytestring
+    - containers
+    - http-types
+    - prometheus
+    - text
+    - wai

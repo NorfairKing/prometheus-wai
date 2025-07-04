@@ -1,0 +1,11 @@
+resolver: lts-23.19
+packages:
+- prometheus-wai
+
+ghc-options:
+  "$locals": -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wpartial-fields -Widentities -Wredundant-constraints -Wcpp-undef -Wunused-packages
+
+nix:
+  enable: false
+system-ghc: true
+with-hpack: hpack
