@@ -4,6 +4,7 @@
 
 module System.Metrics.Prometheus.Wai.Middleware
   ( registerWaiMetrics,
+    WaiMetrics (..),
     instrumentWaiMiddleware,
     metricsEndpointMiddleware,
     metricsEndpointAtMiddleware,
@@ -74,20 +75,32 @@ registerWaiMetrics labels registry = do
 
 -- | Record the given Wai metrics in a middleware.
 instrumentWaiMiddleware :: WaiMetrics -> Wai.Middleware
-instrumentWaiMiddleware WaiMetrics {..} application request sendResponse = do
-  begin <- getMonotonicTimeNSec
-  application request $ \response -> do
-    end <- getMonotonicTimeNSec
+instrumentWaiMiddleware WaiMetrics {..} application request sendResponse =
+  let isWebSocketsReq =
+        lookup "upgrade" (Wai.requestHeaders request) == Just "websocket"
+      shouldInstrument =
+        -- Don't instrument WebSocket requests because they don't have a
+        -- response but some libraries still pretend that it does and will
+        -- give it a 500 status code.
+        -- Moreover, the 'latency' will be 'how long the connection was open'
+        -- which is also useless.
+        not isWebSocketsReq
+   in if shouldInstrument
+        then do
+          begin <- getMonotonicTimeNSec
+          application request $ \response -> do
+            end <- getMonotonicTimeNSec
 
-    -- Count the status code
-    mapM_ Counter.inc (M.lookup (HTTP.statusCode (Wai.responseStatus response)) waiMetricsStatusCode)
+            -- Count the status code
+            mapM_ Counter.inc (M.lookup (HTTP.statusCode (Wai.responseStatus response)) waiMetricsStatusCode)
 
-    -- Count the application response duration
-    let nanos = end - begin
-        millis = fromIntegral nanos / 1_000_000
-    Histogram.observe millis waiMetricsDuration
+            -- Count the application response duration
+            let nanos = end - begin
+                millis = fromIntegral nanos / 1_000_000
+            Histogram.observe millis waiMetricsDuration
 
-    sendResponse response
+            sendResponse response
+        else application request sendResponse
 
 -- | Add a metrics endpoint using the given industry.
 metricsEndpointMiddleware :: Registry -> Wai.Middleware
