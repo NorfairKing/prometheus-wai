@@ -1,5 +1,5 @@
 name: prometheus-wai
-version: 0.0.0.0
+version: 0.0.0.1
 github: "NorfairKing/prometheus-wai"
 license: MIT
 author: "Tom Sydney Kerckhove"
@@ -9,6 +9,9 @@ description: "Prometheus metrics for WAI applications"
 
 dependencies:
 - base >= 4.7 && < 5
+
+extra-source-files:
+- CHANGELOG.md
 
 library:
   source-dirs: src

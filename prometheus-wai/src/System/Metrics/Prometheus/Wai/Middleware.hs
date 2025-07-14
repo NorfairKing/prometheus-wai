@@ -8,6 +8,7 @@ module System.Metrics.Prometheus.Wai.Middleware
     instrumentWaiMiddleware,
     metricsEndpointMiddleware,
     metricsEndpointAtMiddleware,
+    metricsEndpointAtMiddlewareWithHook,
   )
 where
 
@@ -31,8 +32,6 @@ import qualified System.Metrics.Prometheus.Metric.Histogram as Histogram (observ
 import qualified System.Metrics.Prometheus.Metric.Histogram as Prometheus (Histogram)
 import qualified System.Metrics.Prometheus.MetricId as Labels
 import qualified System.Metrics.Prometheus.MetricId as Prometheus (Labels (..))
-
--- TODO ignore websocket requests when gathering info
 
 data WaiMetrics = WaiMetrics
   { waiMetricsStatusCode :: !(Map Int Prometheus.Counter),
@@ -102,14 +101,27 @@ instrumentWaiMiddleware WaiMetrics {..} application request sendResponse =
             sendResponse response
         else application request sendResponse
 
--- | Add a metrics endpoint using the given industry.
+-- | Add a metrics endpoint using the given registry.
 metricsEndpointMiddleware :: Registry -> Wai.Middleware
 metricsEndpointMiddleware = metricsEndpointAtMiddleware "/metrics"
 
+-- | Add a metrics endpoint at a given path using the given registry.
 metricsEndpointAtMiddleware :: ByteString -> Registry -> Wai.Middleware
-metricsEndpointAtMiddleware path registry application request sendResponse =
+metricsEndpointAtMiddleware =
+  metricsEndpointAtMiddlewareWithHook (pure ())
+
+-- | Add a metrics endpoint at a given path and last-minute hook using the given registry.
+--
+-- This lets you set metrics that are evaluated when the /metrics endpoint is hit.
+metricsEndpointAtMiddlewareWithHook ::
+  IO () ->
+  ByteString ->
+  Registry ->
+  Wai.Middleware
+metricsEndpointAtMiddlewareWithHook lastMinuteHook path registry application request sendResponse =
   if Request.rawPathInfo request == path
     then do
+      lastMinuteHook
       s <- Registry.sample registry
       sendResponse
         $ Wai.responseBuilder
