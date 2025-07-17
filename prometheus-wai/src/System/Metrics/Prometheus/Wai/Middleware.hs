@@ -64,9 +64,9 @@ registerWaiMetrics labels registry = do
   let durationBounds =
         concat
           [ [1, 2, 3, 5],
-            [10, 20, 30, 40, 50],
-            [100, 200, 300, 400, 500],
-            [1_000, 2_000, 3_000, 4_000, 5_000],
+            [10, 20 .. 100],
+            [100, 200 .. 900],
+            [1_000, 2_000 .. 9_000],
             [10_000]
           ]
   waiMetricsDuration <- Prometheus.registerHistogram "http_request_duration_milliseconds" labels durationBounds registry
